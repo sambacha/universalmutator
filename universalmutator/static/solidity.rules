@@ -48,3 +48,129 @@ if (\(.*\)) ==> if (false)
 if(\(.*\)) ==> if(false)
 if (\(.*\)) ==> if (true)
 if(\(.*\)) ==> if(true)
+
+// NEW SOLIDITY RULES 
+
+([^u])int16[^0-9] ==> int8 
+([^u])int32 ==> int16 
+([^u])int64 ==> int32 
+([^u])int128 ==>int64 
+([^u])int256 ==> int128 
+([^u])int8[^0-9] ==> int16 
+([^u])int16[^0-9] ==> int32 
+([^u])int32 ==> int64 
+([^u])int64 ==> int128 
+([^u])int128 ==> int256 
+([^u])int[0-9]+ ==> int256 
+([^u])int[0-9]+ ==> int8 
+
+
+uint16[^0-9] ==> uint8 
+uint32 ==> uint8 
+uint64 ==> uint32 
+uint128 ==> uint64 
+uint256 ==> uint128 
+uint8[^0-9] ==> uint16 
+uint16[^0-9] ==> uint32 
+uint32 ==> uint64 
+uint64 ==> uint128 
+uint128 ==> uint256 
+uint[0-9]* ==> uint256  
+uint[0-9]* ==> uint8 
+
+
+([^u])int8[^0-9] ==> \1uint8 
+([^u])int16[^0-9] ==> \1uint16 
+([^u])int32 ==> \1uint32
+([^u])int64 ==> \1uint64
+([^u])int128 ==> \1uint128
+([^u])int256 ==> \1uint256
+//([^u])int[0123456789]* ==> \1int256 
+//([^u])int[0123456789]* ==> \1int8 
+
+uint8 ==> int8
+uint16 ==> int16
+uint32 ==> int32
+uint64 ==> int64
+uint128 ==> int128
+uint256 ==> int256
+uint[0123456789]* ==> int256 
+uint[0123456789]* ==> int8 
+
+
+([^u])fixed ==> \1ufixed
+ufixed ==> fixed
+
+public ==> private 
+internal ==> private 
+external ==> private 
+public ==> internal 
+private ==> internal 
+external ==> internal 
+public  ==> external  
+private  ==> external 
+internal  ==> external 
+private ==> public 
+internal ==> public 
+external ==> public  
+
+//\.\s*transfer ==> .call
+//\.\s*send([^A-Za-z]) ==> .call\1
+//\.\s*transfer ==> .send
+//\.\s*call([^A-Z]) ==> .send\1
+//\.\s*call([^A-Z])  ==> .transfer\1
+//\.\s*send([^A-Z])  ==> .transfer\1
+
+\.\s*transfer ==> .send
+\.\s*send([^A-Z])  ==> .transfer\1
+\.\s*call.*.value(\(.*\))\(\)\;  ==> .transfer\1;
+\.\s*call.*.value(\(.*\))\(\)\;  ==> .send\1;
+\.\s*transfer(\(.*\)\;) ==> .call.value\1
+\.\s*send(\(.*\)\;) ==> .call.value\1
+
+
+require(\(.*)\,\s*\'.*\)\; ==> assert\1);
+require(\(.*)\,\s*\'.*\)\; ==> if(!\1)) revert();
+//require.* ==> revert()
+assert(.*)\; ==> require\1;
+//assert.*\; ==> revert();
+assert(.*)\; ==> if(!\1) revert();
+require.* ==>
+assert.* ==>
+revert.* ==>
+(if\(.*\).*)throw ==> \1 revert()
+if(\(.*\)).*throw\;\s*\}? ==> assert(!\1);
+if(\(.*\)).*throw\;\s*\}? ==> require(!\1);
+
+
+msg.sender ==> tx.origin
+tx.origin ==> msg.sender
+
+(selfdestruct)(\s*\(.*\)) ==> selfdestruct (address(0x123))
+selfdestruct(\s*\(.*\)\;) ==> 
+
+//change address
+(Sent\s*\()(.*\,)(.*\,) ==> \1 0x715,0x614,
+//msg.sender ==> 0x712
+(address constant[^=]*=)[^;]*\; ==> \10x715;
+
+//change gas amount
+(.*\.gas\s*\().*\) ==> \11500)
+(.*\.gas\s*\().*\) ==> \1200)
+(.*\.gas\s*\().*\) ==> \13000)
+(.*\.gas\s*\().*\) ==> \15000)
+msg.gas ==> 1500
+msg.gas ==> 300
+
+//change in any constant value
+(u?int[0-9]*\s*constant[^=]*\=[^;]*)\; ==> \1+20;
+(u?int[0-9]*\s*constant[^=]*\=[^;]*)\; ==> \1200;
+(string\s*constant[^=]*\=)[^;]*\; ==> $1"hello";
+(bytes[0-9]*\s*constant[^=]*\=[^("]\()[^)]]*\)\; ==> \1"hello");
+(static\sbyte\[\][^=]*\=\s*)\"[^"]*\"([^;]*\;) ==> \1"hello"\2
+
+//change the functions name to constructor
+(contract)(\s*[^{()}]*)(\{.*function)([^{}()]*)\( ==> \1\2\3\2(
+
+//change constructor name to something else
+(contract)(\s*[^{()}]*)(\{.*function)([^{}()]*)\( ==> \1\2\3 newName(
